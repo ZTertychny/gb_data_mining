@@ -80,3 +80,16 @@ class HeadHunterLoader(ItemLoader):
     employer_website_out = TakeFirst()
     description_employer_out = create_text
     employer_link_hh_out = TakeFirst()
+
+
+class InstTagLoader(ItemLoader):
+    default_item_class = dict
+    date_parse_out = TakeFirst()
+    data_out = TakeFirst()
+    _id_out = TakeFirst()
+
+
+class InstPostLoader(ItemLoader):
+    default_item_class = dict
+    date_parse_out = TakeFirst()
+    data_out = TakeFirst()

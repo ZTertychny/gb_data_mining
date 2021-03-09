@@ -63,10 +63,15 @@ DEFAULT_REQUEST_HEADERS = {
 
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
+
+IMAGES_STORE = "images"
+
 ITEM_PIPELINES = {
     "gb_parse.pipelines.GbParsePipeline": 300,
-    # 'gb_parse.pipelines.GbParseMongoPipeline': 400,
-    "gb_parse.pipelines.GbParseHHMongoPipline": 500,
+    "gb_parse.pipelines.GbImageDownloadPipeline": 350,
+    # 'gb_parse.pipelines.GbParseMongoPipeline': 400
+    # "gb_parse.pipelines.GbParseHHMongoPipline": 500,
+    "gb_parse.pipelines.GbParseInstMongoPipline": 500,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
