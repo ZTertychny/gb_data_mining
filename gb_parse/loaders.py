@@ -93,3 +93,15 @@ class InstPostLoader(ItemLoader):
     default_item_class = dict
     date_parse_out = TakeFirst()
     data_out = TakeFirst()
+
+
+class InstaSocialFollowLoader(ItemLoader):
+    default_item_class = dict
+    profile_out = TakeFirst()
+    _id_out = TakeFirst()
+    username_out = TakeFirst()
+    follower_url_out = TakeFirst()
+    profile_pic_url_out = TakeFirst()
+    is_private_out = TakeFirst()
+    is_verified_out = TakeFirst()
+    is_follower_out = TakeFirst()

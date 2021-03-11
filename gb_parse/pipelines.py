@@ -9,6 +9,7 @@ from itemadapter import ItemAdapter
 import pymongo
 from scrapy import Request
 from scrapy.pipelines.images import ImagesPipeline
+import bson
 
 
 class GbParsePipeline:
@@ -39,6 +40,18 @@ class GbParseHHMongoPipline:
         return item
 
 
+class GbImageDownloadPipeline(ImagesPipeline):
+    def get_media_requests(self, item, info):
+        img_url = item.get("data").get("photo")
+        if img_url:
+            yield Request(img_url)
+
+    def item_completed(self, results, item, info):
+        if results:
+            item["data"]["photos"] = results[0][1]
+        return item
+
+
 class GbParseInstMongoPipline:
     def __init__(self):
         client = pymongo.MongoClient("mongodb://localhost:27017")
@@ -54,13 +67,35 @@ class GbParseInstMongoPipline:
         return item
 
 
-class GbImageDownloadPipeline(ImagesPipeline):
+class GbParseInstaSocialImageDownloadPipeline(ImagesPipeline):
     def get_media_requests(self, item, info):
-        img_url = item.get("data").get("photo")
+        img_url = item.get("profile_pic_url")
         if img_url:
             yield Request(img_url)
 
     def item_completed(self, results, item, info):
         if results:
-            item["data"]["photos"] = results[0][1]
+            item["photos"] = [itm[1] for itm in results]
         return item
+
+
+class GbParseInstaSocialMongoPipline:
+    def __init__(self):
+        client = pymongo.MongoClient("mongodb://localhost:27017")
+        self.db = client["InstaSocial"]
+
+    def process_item(self, item, spider):
+        coll_name = item.pop("profile")
+        try:
+            self.insert_item(coll_name, item)
+        except bson.errors.InvalidDocument:
+            item["photos"] = None
+            self.insert_item(coll_name, item)
+
+        return item
+
+    def insert_item(self, coll_name, item):
+        if item["is_follower"]:
+            self.db[f"{coll_name}.followers"].insert_one(item)
+        else:
+            self.db[f"{coll_name}.following"].insert_one(item)

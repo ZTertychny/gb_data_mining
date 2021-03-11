@@ -16,3 +16,15 @@ class InstagramSpiderPaths:
         "accessibility_caption": lambda post: post.get("accessibility_caption"),
         "photos": lambda post: [post.get("thumbnail_src")],
     }
+
+
+class InstaSocialSpiderPaths:
+
+    follow_info = {
+        "_id": lambda follower: follower.get("id"),
+        "username": lambda follower: follower.get("username"),
+        "follower_url": lambda follower: f"https://www.instagram.com/{follower.get('username')}",
+        "profile_pic_url": lambda follower: follower.get("profile_pic_url"),
+        "is_private": lambda follower: follower.get("is_private"),
+        "is_verified": lambda follower: follower.get("is_verified"),
+    }
