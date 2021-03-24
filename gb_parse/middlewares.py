@@ -3,7 +3,10 @@
 # See documentation in:
 # https://docs.scrapy.org/en/latest/topics/spider-middleware.html
 
+import time
 from scrapy import signals
+from scrapy.downloadermiddlewares.retry import RetryMiddleware
+from scrapy.utils.response import response_status_message
 
 # useful for handling different item types with a single interface
 from itemadapter import is_item, ItemAdapter
@@ -61,6 +64,9 @@ class GbParseDownloaderMiddleware:
     # scrapy acts as if the downloader middleware does not modify the
     # passed objects.
 
+    def __init__(self):
+        self.count_requests = 0
+
     @classmethod
     def from_crawler(cls, crawler):
         # This method is used by Scrapy to create your spiders.
@@ -69,6 +75,12 @@ class GbParseDownloaderMiddleware:
         return s
 
     def process_request(self, request, spider):
+        self.count_requests += 1
+        if self.count_requests == 7:
+            spider.crawler.engine.pause()
+            time.sleep(3)
+            spider.crawler.engine.unpause()
+            self.count_requests = 0
         # Called for each request that goes through the downloader
         # middleware.
 
@@ -101,3 +113,41 @@ class GbParseDownloaderMiddleware:
 
     def spider_opened(self, spider):
         spider.logger.info("Spider opened: %s" % spider.name)
+
+
+class TooManyRequestsRetryMiddleware(RetryMiddleware):
+    def __init__(self, crawler):
+        super(TooManyRequestsRetryMiddleware, self).__init__(crawler.settings)
+        self.crawler = crawler
+        self.counter = 0
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(crawler)
+
+    def process_exception(self, request, exception, spider):
+        if isinstance(exception, self.EXCEPTIONS_TO_RETRY) and not request.meta.get(
+            "dont_retry", False
+        ):
+            self.crawler.engine.pause()
+            time.sleep(self.calculate_delay(self.counter, 5))
+            self.crawler.engine.unpause()
+            return self._retry(request, exception, spider)
+
+    def process_response(self, request, response, spider):
+        if request.meta.get("dont_retry", False):
+            return response
+        elif response.status == 429:
+            self.counter = 0
+            self.crawler.engine.pause()
+            time.sleep(60)
+            self.crawler.engine.unpause()
+            reason = response_status_message(response.status)
+            return self._retry(request, reason, spider) or response
+        elif response.status in self.retry_http_codes:
+            reason = response_status_message(response.status)
+            return self._retry(request, reason, spider) or response
+        return response
+
+    def calculate_delay(self, counter, start_delay):
+        return float(counter * start_delay)

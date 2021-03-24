@@ -105,3 +105,15 @@ class InstaSocialFollowLoader(ItemLoader):
     is_private_out = TakeFirst()
     is_verified_out = TakeFirst()
     is_follower_out = TakeFirst()
+
+
+class InstFinalProjLoader(ItemLoader):
+    default_item_class = dict
+    _id_out = TakeFirst()
+    profile_out = TakeFirst()
+    username_out = TakeFirst()
+    follow_url_out = TakeFirst()
+
+
+class InstChainLoader(ItemLoader):
+    default_item_class = dict

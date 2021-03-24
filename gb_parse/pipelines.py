@@ -7,9 +7,10 @@
 # useful for handling different item types with a single interface
 from itemadapter import ItemAdapter
 import pymongo
+import pymongo.errors
+import bson
 from scrapy import Request
 from scrapy.pipelines.images import ImagesPipeline
-import bson
 
 
 class GbParsePipeline:
@@ -95,7 +96,36 @@ class GbParseInstaSocialMongoPipline:
         return item
 
     def insert_item(self, coll_name, item):
-        if item["is_follower"]:
+        if item.get("follower"):
             self.db[f"{coll_name}.followers"].insert_one(item)
         else:
             self.db[f"{coll_name}.following"].insert_one(item)
+
+
+class GbParseInstaFinalProjMongoPipline:
+    def __init__(self):
+        client = pymongo.MongoClient("mongodb://localhost:27017")
+        self.db = client["InstaSocial"]
+
+    def process_item(self, item, spider):
+        if not item.get("chain_array"):
+            collection_name = item.pop("profile")
+            try:
+                self.db[f"{collection_name}.full"].insert_one(item)
+            except pymongo.errors.DuplicateKeyError:
+                self.db[f"{collection_name}.handshake"].insert_one(item)
+
+        return item
+
+
+class GbParseInstChainMongoPipline:
+    def __init__(self):
+        client = pymongo.MongoClient("mongodb://localhost:27017")
+        self.db = client["InstaSocial"]
+        self.collection = self.db["chain"]
+
+    def process_item(self, item, spider):
+        if item.get("chain_array"):
+            self.collection.insert_one(item)
+
+        return item
